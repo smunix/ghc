@@ -2409,7 +2409,7 @@ kcCheckDeclHeader_sig kisig name flav
         KindedTyVar _ _ v v_hs_ki -> do
           v_ki <- tcLHsKindSig (TyVarBndrKindCtxt (unLoc v)) v_hs_ki
           discardResult $ -- See Note [discardResult in kcCheckDeclHeader_sig]
-            unifyKind (Just (HsTyVar noExtField NotPromoted v))
+            unifyKind (Just (ppr v))
                       (tyBinderType tb)
                       v_ki
 
@@ -2955,7 +2955,7 @@ tcHsQTyVarBndr _ new_tv (KindedTyVar _ _ (L _ tv_nm) lhs_kind)
        ; mb_tv <- tcLookupLcl_maybe tv_nm
        ; case mb_tv of
            Just (ATyVar _ tv)
-             -> do { discardResult $ unifyKind (Just hs_tv)
+             -> do { discardResult $ unifyKind (Just (ppr tv_nm))
                                         kind (tyVarKind tv)
                        -- This unify rejects:
                        --    class C (m :: * -> *) where
@@ -2963,9 +2963,6 @@ tcHsQTyVarBndr _ new_tv (KindedTyVar _ _ (L _ tv_nm) lhs_kind)
                    ; return tv }
 
            _ -> new_tv tv_nm kind }
-  where
-    hs_tv = HsTyVar noExtField NotPromoted (noLoc tv_nm)
-            -- Used for error messages only
 
 --------------------------------------
 -- Binding type/class variables in the
@@ -3648,7 +3645,7 @@ Here
    It must be a skolem so that that it retains its identity, and
    GHC.Tc.Errors.getSkolemInfo can thereby find the binding site for the skolem.
 
- * The type signature pattern (f :: b -> c) makes freshs meta-tyvars
+ * The type signature pattern (f :: b -> c) makes fresh meta-tyvars
    beta and gamma (TauTvs), and binds "b" :-> beta, "c" :-> gamma in the
    environment
 
@@ -3676,7 +3673,7 @@ For RULE binders, though, things are a bit different (yuk).
   RULE "foo" forall (x::a) (y::[a]).  f x y = ...
 Here this really is the binding site of the type variable so we'd like
 to use a skolem, so that we get a complaint if we unify two of them
-together.  Hence the new_tv function in tcHsPatSigType.
+together.  Hence the new_implicit_tv function in tcHsPatSigType.
 
 
 ************************************************************************
