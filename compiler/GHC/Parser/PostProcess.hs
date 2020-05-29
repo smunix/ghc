@@ -1137,6 +1137,13 @@ checkAPat loc e0 = do
                       | nPlusKPatterns && (plus == plus_RDR)
                       -> return (mkNPlusKPat (L nloc n) (L lloc lit))
 
+   -- Improve error messages for the @-operator when the user meant an @-pattern
+   PatBuilderOpApp _ op _ | opIsAt (unLoc op) -> do
+     addError (getLoc op) $
+       text "Found a binding for an @-operator in a pattern position." $$
+       text "Perhaps you meant an @-pattern, which must not be surrounded by whitespace?"
+     return (WildPat noExtField)
+
    PatBuilderOpApp l (L cl c) r
      | isRdrDataCon c -> do
          l <- checkLPat l
@@ -1171,6 +1178,9 @@ patFail loc e = addFatalError loc $ text "Parse error in pattern:" <+> ppr e
 patIsRec :: RdrName -> Bool
 patIsRec e = e == mkUnqual varName (fsLit "rec")
 
+opIsAt :: RdrName -> Bool
+opIsAt e = e == mkUnqual varName (fsLit "@")
+
 ---------------------------------------------------------------------------
 -- Check Equation Syntax
 
@@ -1203,7 +1213,7 @@ checkFunBind :: SrcStrictness
              -> Located (GRHSs GhcPs (LHsExpr GhcPs))
              -> P ([AddAnn],HsBind GhcPs)
 checkFunBind strictness ann lhs_loc fun is_infix pats (L rhs_span grhss)
-  = do  ps <- mapM checkPattern pats
+  = do  ps <- runPV_msg param_hint (mapM checkLPat pats)
         let match_span = combineSrcSpans lhs_loc rhs_span
         -- Add back the annotations stripped from any HsPar values in the lhs
         -- mapM_ (\a -> a match_span) ann
@@ -1217,6 +1227,12 @@ checkFunBind strictness ann lhs_loc fun is_infix pats (L rhs_span grhss)
                                        , m_grhss = grhss })])
         -- The span of the match covers the entire equation.
         -- That isn't quite right, but it'll do for now.
+  where
+    param_hint
+      | Infix <- is_infix, opIsAt (unLoc fun)
+      = text "In an argument of an @-operator binding." $$
+        text "Perhaps you meant an @-pattern, which must not be surrounded by whitespace?"
+      | otherwise = empty
 
 makeFunBind :: Located RdrName -> [LMatch GhcPs (LHsExpr GhcPs)]
             -> HsBind GhcPs

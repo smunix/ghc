@@ -1,0 +1,5 @@
+
+T18251a.hs:3:1: error:
+    Parse error in pattern: pairs
+    In an argument of an @-operator binding.
+    Perhaps you meant an @-pattern, which must not be surrounded by whitespace?
