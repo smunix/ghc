@@ -237,7 +237,7 @@ instance H.Builder Builder where
                     writeFileChanged output stdout
             case builder of
                 Ar Pack stage -> do
-                    useTempFile <- flag stage ArSupportsAtFile
+                    useTempFile <- flag (Staged stage ArSupportsAtFile)
                     if useTempFile then runAr                path buildArgs
                                    else runArWithoutTempFile path buildArgs
 

@@ -53,7 +53,7 @@ defaultPackages Stage3 = return []
 -- | Packages built in 'Stage0' by default. You can change this in "UserSettings".
 stage0Packages :: Action [Package]
 stage0Packages = do
-    cross <- flag undefined CrossCompiling
+    cross <- flag (Global CrossCompiling)
     return $ [ binary
              , cabal
              , compareSizes
@@ -88,7 +88,7 @@ stage1Packages :: Action [Package]
 stage1Packages = do
     intLib     <- integerLibrary =<< flavour
     libraries0 <- filter isLibrary <$> stage0Packages
-    cross      <- flag undefined CrossCompiling
+    cross      <- flag (Global CrossCompiling)
     return $ libraries0 -- Build all Stage0 libraries in Stage1
           ++ [ array
              , base
