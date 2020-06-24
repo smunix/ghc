@@ -631,6 +631,13 @@ loop:
            */
           return;
 
+      case SMALL_MUT_ARR_PTRS_CLEAN:
+      case SMALL_MUT_ARR_PTRS_DIRTY:
+      case SMALL_MUT_ARR_PTRS_FROZEN_CLEAN:
+      case SMALL_MUT_ARR_PTRS_FROZEN_DIRTY:
+          // todo
+          return;
+
       default:
           barf("evacuate(static): strange closure type %d", (int)(info->type));
       }
