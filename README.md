@@ -69,7 +69,7 @@ set v m = ((),v)
 
 seg = (0xB800, 0xB800 + 307200 - 1)
 
-main = lift (return ()) $ iomap (return ()) seg >>= set . pushToScreen
+main = lift (return ()) $ iomap (return ()) seg >> set $ pushToScreen "Hello, World!"
 ```
 
 Again, a lot of unanswered questions. But a fun challenge
