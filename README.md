@@ -1,3 +1,82 @@
+# GHC Standalone backend
+
+Here you will find a fork of GHC where we plan on implementing a backend that will allow compiling haskell for bear metal programming. There will be no RTS or OS dependance and we hope to target much more than just x86. There are two motivations for this project
+
+1. To bring haskell to embedded hardware in order to gain greater software safety for all systems. Many embedded computers are used all over and are used in many places where humans interact with machines. It seems wrong that there are no good type safe, pure languages available.
+2. We wish to try out some ideas to extend the IO monad, making it's implementation as functional as it's uses.
+
+## IO Proposals
+
+### Proposal 1
+
+This proposal is far more suited to embedded programming. The general idea is that there are very few ways to interface with a device, such as the arduino. If we can fully encapsulate the GPIO pins then we can fully encapsulate all of the interactions between the real world and the software. Consider the following code for rotating LEDs:
+
+```haskell
+{-# LANGUAGE PatternSynonyms #-}
+
+module Main where
+
+pattern LEDs x y z = { (... x, _, _, y, z, _ , ...) } -- Tuple representing the pins
+
+-- This code assumes that type IO a = RealWorld -> (a, RealWorld)
+-- where the RealWorld type is just the state of the pins
+
+rotate :: IO ()
+rotate (LEDs x y z) = ((), LEDs y z x)
+
+initState :: IO ()
+initState (LEDs _ _ _) = ((),LEDs 1 0 0)
+
+loop = rotate >> sleep 0.5 >> loop
+
+main = do
+	setPinOut $ Pin 12
+	setPinOut $ Pin 15
+	setPinOut $ Pin 16
+	initState
+	loop
+```
+
+How do we deal with interrupts? How do we do the `setPinOut`s in the main function? No idea. There is a lot to think about!
+
+### Proposal 2
+
+This proposal is more general case than the last and more for OS development or bear metal ARM/x86 programming where we can have a huge amount of memory mapped IO. We essentially define a class to encapsulate hardware.
+
+```haskell
+{-# LANGUAGE FunctionalDependencies #-}
+
+class (Monad h) => Harware h e | h -> e where
+	iomap :: IO a -> e -> h a
+	lift  :: IO a -> h a -> IO a
+```
+
+`iomap` allows you to access some IO on the computer and lift gets us back to the IO monad. So an example would be just memory. `e` here would be a tuple that defines a segment of memory and `type h a = Vector Byte -> (a, Vector Byte)`. So `iomap io (0,256)` would give us direct access the the memory in the range $0 - 256$. We can see how this could be done for GPIO.
+
+As an example, say we were on a system that had a terminal attached. We would write ascii bytes from address `0xB800` and they would appear on the screen. The terminal is `480x640` giving us 307,200 bytes max that we could write. We could do the following hello world program:
+
+```haskell
+module Main where
+
+import Data.Char (Ord)
+
+-- Fill just makes sure the vector is the correct length
+pushToScreen :: String -> Vector Bytes
+pushToScreen s = fill 307200 $ toVector $ (map ord s)
+
+set :: Vector Bytes -> Mem ()
+set v m = ((),v)
+
+seg = (0xB800, 0xB800 + 307200 - 1)
+
+main = lift (return ()) $ iomap (return ()) seg >>= set . pushToScreen
+```
+
+Again, a lot of unanswered questions. But a fun challenge
+
+# GHC's Readme
+
+
 The Glasgow Haskell Compiler
 ============================
 
