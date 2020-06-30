@@ -13,7 +13,7 @@ The proposal is that we introduce a type class called `Hardware` that encapsulat
 {-# LANGUAGE FunctionalDependencies #-}
 
 class (Monad h) => Harware h e | h -> e where
-	iomap :: IO a -> e -> (a -> h b) -> IO b
+	iomap :: e -> h a -> IO a
 ```
 
 `iomap` allows you to access some IO on the computer and lift gets us back to the IO monad. So an example would be just memory. `e` here would be a tuple that
@@ -30,14 +30,39 @@ import Data.Char (Ord)
 
 -- Fill just makes sure the vector is the correct length
 setText :: Int -> String -> Mem ()
-setText offset s m = m // (zip [offset..] $ map (toByte . ord) s)
+setText offset s m = ((), m // (zip [offset..] $ map (toByte . ord) s))
 
 seg = (0xB800, 0xB800 + 307200 - 1)
 
-main = iomap (return ()) seg (return "Hello World" >>= setText) >> return ()
+main = iomap seg (return "Hello World" >>= setText)
 ```
-
 The code assumes vectors of the specification described [here](https://hackage.haskell.org/package/vector-0.12.1.2/docs/Data-Vector.html).
+
+But it isn't just memory mapped IO, we could easily make an instance of `Hardware` that encapsulated GPIO pins. In the next example, we
+assume that someone has made a GPIO instance that represent's the pins as a large tuple of bytes:
+```haskell
+{-# LANGUAGE PatternSynonyms #-}
+
+ module Main where
+
+ pattern LEDs x y z = (... x, _, _, y, z, _ , ...) -- Tuple representing the pins
+
+ -- This code assumes that type GPIO a = (pin1,..., pinN) -> (a, (pin1,..., pinN))
+
+ rotate :: GPIO ()
+ rotate (LEDs x y z) = ((), LEDs y z x)
+
+ initState :: GPIO ()
+ initState (LEDs _ _ _) = ((),LEDs 1 0 0)
+
+ loop = rotate >> sleep 0.5 >> loop
+
+ main = do
+ 	setPinOut $ Pin 12
+ 	setPinOut $ Pin 15
+ 	setPinOut $ Pin 16
+ 	iomap () (initState >> loop)
+```
 
 # GHC's Readme
 
