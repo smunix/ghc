@@ -16,7 +16,7 @@ This proposal is far more suited to embedded programming. The general idea is th
 
 module Main where
 
-pattern LEDs x y z = { (... x, _, _, y, z, _ , ...) } -- Tuple representing the pins
+pattern LEDs x y z = (... x, _, _, y, z, _ , ...) -- Tuple representing the pins
 
 -- This code assumes that type IO a = RealWorld -> (a, RealWorld)
 -- where the RealWorld type is just the state of the pins
@@ -47,8 +47,7 @@ This proposal is more general case than the last and more for OS development or 
 {-# LANGUAGE FunctionalDependencies #-}
 
 class (Monad h) => Harware h e | h -> e where
-	iomap :: IO a -> e -> h a
-	lift  :: IO a -> h a -> IO a
+	iomap :: IO a -> e -> (a -> h b) -> IO b
 ```
 
 `iomap` allows you to access some IO on the computer and lift gets us back to the IO monad. So an example would be just memory. `e` here would be a tuple that defines a segment of memory and `type h a = Vector Byte -> (a, Vector Byte)`. So `iomap io (0,256)` would give us direct access the the memory in the range $0 - 256$. We can see how this could be done for GPIO.
@@ -69,7 +68,7 @@ set v m = ((),v)
 
 seg = (0xB800, 0xB800 + 307200 - 1)
 
-main = lift (return ()) $ iomap (return ()) seg >> set $ pushToScreen "Hello, World!"
+main = iomap (return ()) seg (return "Hello World" >>= set . pushToScreen) >> return ()
 ```
 
 Again, a lot of unanswered questions. But a fun challenge
