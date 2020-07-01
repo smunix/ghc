@@ -34,7 +34,7 @@ setText offset s m = ((), m // (zip [offset..] $ map (toByte . ord) s))
 
 seg = (0xB800, 0xB800 + 307200 - 1)
 
-main = iomap seg (return "Hello World" >>= setText)
+main = iomap seg (return "Hello World" >>= setText 0)
 ```
 The code assumes vectors of the specification described [here](https://hackage.haskell.org/package/vector-0.12.1.2/docs/Data-Vector.html).
 
