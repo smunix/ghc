@@ -19,7 +19,7 @@ class (Monad h) => Harware h e | h -> e where
 `iomap` allows you to access some IO on the computer using a specific monad that encapsulates that hardware
 within the IO monad. So an example would be just memory. `e` here would be a tuple that
 defines a segment of memory and `type h a = Vector Byte -> (a, Vector Byte)`. So `iomap (0,256)` would give us direct access the the memory in the range
-0 - 256. We can see how this could be done for GPIO.
+0 - 256.
 
 As an example, say we were on a system that had a terminal attached. We would write ascii bytes from address `0xB800` and they would appear on the screen.
 The terminal is `480x640` giving us 307,200 bytes max that we could write. We could do the following hello world program:
