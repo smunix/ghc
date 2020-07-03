@@ -8,7 +8,7 @@ dependance and we hope to target much more than just x86. There are three motiva
 3. We want to eventually build an entire operating system purely in haskell
 
 ## IO Proposal
-The proposal is that we introduce a type class called `Hardware` that encapsulates, you guessed it...
+The proposal is that we introduce a type class called `Hardware` that encapsulates, you guessed it... hardware!
 ```haskell
 {-# LANGUAGE FunctionalDependencies #-}
 
@@ -16,7 +16,8 @@ class (Monad h) => Harware h e | h -> e where
 	iomap :: e -> h a -> IO a
 ```
 
-`iomap` allows you to access some IO on the computer and lift gets us back to the IO monad. So an example would be just memory. `e` here would be a tuple that
+`iomap` allows you to access some IO on the computer using a specific monad that encapsulates that hardware
+within the IO monad. So an example would be just memory. `e` here would be a tuple that
 defines a segment of memory and `type h a = Vector Byte -> (a, Vector Byte)`. So `iomap io (0,256)` would give us direct access the the memory in the range
 0 - 256. We can see how this could be done for GPIO.
 
